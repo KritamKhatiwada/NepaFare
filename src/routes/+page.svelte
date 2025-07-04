@@ -1,5 +1,5 @@
 <script>
-  import { createSearchStore, searchHandler } from "$lib/stores/search.js";
+  import { createSearchStore, searchHandler, goClickedHandler,placePairsStore} from "$lib/stores/search.js";
   import { onDestroy } from "svelte";
 
         const routes= [
@@ -547,14 +547,64 @@
     onDestroy(()=>{
         unsubscribe();
     })
-    function calculate(){
-        console.log("CLICKED")
-    }
+    
+
+  // geocoding thingy
+    let place1="budhanilkantha, Kathmandu";
+    let place2="ratnapark, Kathmandu";
+  
+  // Results
+
+
+
+
+
+
+
+
+   function handleSubmit(event) {
+    event.preventDefault();
+    findTwoPlace();
+   }
+
+   let loading=false;
+   function findTwoPlace() {
+       loading=true;
+      try{
+               // Get current store value
+        let currentStore;
+        searchStore.subscribe(value => {
+        currentStore = value;
+        })();
+
+        // Run the search handler
+        const updatedStore = searchHandler(currentStore);
+        
+        // Update the store with filtered results
+        searchStore.update(store => ({
+        ...store,
+        filtered: updatedStore.filtered
+        }));
+
+        // Process the results
+        goClickedHandler(updatedStore);
+
+      }
+       catch (error) {
+            console.error('Error in findTwoPlace:', error);
+        } finally {
+            loading = false;
+        }
+    
+  }
+
+
+    
 </script>
 <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50">
   <div class=" ">
-
-    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-5xl flex flex-row gap-8 items-center">
+    <form on:submit={handleSubmit}>
+            <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-5xl flex flex-row gap-8 items-center">
         <div class="flex flex-row gap-4 items-center flex-1">
             <p class="text-xl font-bold">From</p>
             <input
@@ -562,6 +612,7 @@
                 type="text"
                 placeholder="ie: Budhanilkatha Bus Stop"
                 class="text-xl px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-64"
+                disabled={loading}
             />
             <p class="text-xl font-bold">To</p>
             <input 
@@ -569,14 +620,22 @@
                 type="text"
                 placeholder="ie: Thapathali"
                 class="text-xl px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-64"
+                disabled={loading}
             />
-            <button on:click={calculate}
-                class="text-2xl font-semibold bg-blue-600 hover:cursor-pointer text-white py-4 px-8 rounded-xl hover:bg-blue-700 transition"
+            <!-- <button type="submit"
+            id ="goButton"
+                
             >
-                Go
+                Go 
             </button>
-        </div>
-    </div>
+                -->
+            <button class="text-2xl font-semibold bg-blue-600 hover:cursor-pointer text-white py-4 px-8 rounded-xl hover:bg-blue-700 transition" type="submit" disabled={loading || !place1.trim() || !place2.trim()}>
+      {loading ? 'Calculating...' : 'Calculate Distance'}
+    </button>
+</div>
+</div>
+</form>  
+
     
   </div>
     <div class="flex flex-col gap-2 mt-10">
