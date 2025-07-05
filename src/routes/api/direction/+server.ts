@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
-
-const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU0YjMwYTVkY2U5MzRiY2E4OGNlZjg1ZmU1ZWM2YWFmIiwiaCI6Im11cm11cjY0In0=';
+import { API_KEY } from '$env/static/private';
 
 export async function POST({ request }) {
   try {
