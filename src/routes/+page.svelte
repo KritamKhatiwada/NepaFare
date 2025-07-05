@@ -1,8 +1,10 @@
-<script>
-  import { createSearchStore, searchHandler, goClickedHandler,placePairsStore} from "$lib/stores/search.js";
+
+
+  <script>
+  import { createSearchStore, searchHandler, goClickedHandler} from "$lib/stores/search.js";
   import { onDestroy } from "svelte";
 
-        const routes= [
+          const routes= [
     {
       route_name: "Bhaktapur - Purano Thimi- Purano Buspark",
       stops: [
@@ -536,119 +538,236 @@
       ]
     }
   ]
-    const searchProducts = routes.map((route)=>({
-        ...route,
-        searchTerms :` ${route.stops.join('')}`
-    }));
 
-    const searchStore=createSearchStore(searchProducts)
-    const unsubscribe= searchStore.subscribe((model)=> searchHandler(model))
-    
-    onDestroy(()=>{
-        unsubscribe();
-    })
-    
+  const searchProducts = routes.map((route) => ({
+    ...route,
+    searchTerms: ` ${route.stops.join('')}`
+  }));
 
-  // geocoding thingy
-    let place1="budhanilkantha, Kathmandu";
-    let place2="ratnapark, Kathmandu";
+  const searchStore = createSearchStore(searchProducts);
+  const unsubscribe = searchStore.subscribe((model) => searchHandler(model));
   
-  // Results
+  onDestroy(() => {
+    unsubscribe();
+  });
 
-
-
-
-
-
-
-
-   function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault();
     findTwoPlace();
-   }
-
-   let loading=false;
-   function findTwoPlace() {
-       loading=true;
-      try{
-               // Get current store value
-        let currentStore;
-        searchStore.subscribe(value => {
-        currentStore = value;
-        })();
-
-        // Run the search handler
-        const updatedStore = searchHandler(currentStore);
-        
-        // Update the store with filtered results
-        searchStore.update(store => ({
-        ...store,
-        filtered: updatedStore.filtered
-        }));
-
-        // Process the results
-        goClickedHandler(updatedStore);
-
-      }
-       catch (error) {
-            console.error('Error in findTwoPlace:', error);
-        } finally {
-            loading = false;
-        }
-    
   }
 
+  let loading = false;
+  let fareResults = [];
+  let selectedRoute = null;
 
+  function findTwoPlace() {
+    loading = true;
+    fareResults = [];
     
-</script>
-<div class="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-  <div class=" ">
-    <form on:submit={handleSubmit}>
-            <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-5xl flex flex-row gap-8 items-center">
-        <div class="flex flex-row gap-4 items-center flex-1">
-            <p class="text-xl font-bold">From</p>
-            <input
-                bind:value={$searchStore.searchFrom}
-                type="text"
-                placeholder="ie: Budhanilkatha Bus Stop"
-                class="text-xl px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-64"
-                disabled={loading}
-            />
-            <p class="text-xl font-bold">To</p>
-            <input 
-                bind:value={$searchStore.searchTo}
-                type="text"
-                placeholder="ie: Thapathali"
-                class="text-xl px-6 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-64"
-                disabled={loading}
-            />
-            <!-- <button type="submit"
-            id ="goButton"
-                
-            >
-                Go 
-            </button>
-                -->
-            <button class="text-2xl font-semibold bg-blue-600 hover:cursor-pointer text-white py-4 px-8 rounded-xl hover:bg-blue-700 transition" type="submit" disabled={loading || !place1.trim() || !place2.trim()}>
-      {loading ? 'Calculating...' : 'Calculate Distance'}
-    </button>
-</div>
-</div>
-</form>  
+    try {
+      // Get current store value
+      let currentStore;
+      searchStore.subscribe(value => {
+        currentStore = value;
+      })();
 
+      // Run the search handler
+      const updatedStore = searchHandler(currentStore);
+      
+      // Update the store with filtered results
+      searchStore.update(store => ({
+        ...store,
+        filtered: updatedStore.filtered
+      }));
+
+      // Calculate fare for each filtered route
+      if (updatedStore.filtered.length > 0) {
+        fareResults = updatedStore.filtered.map(route => {
+          const fare = calculateFareForRoute(route, currentStore.searchFrom, currentStore.searchTo);
+          return {
+            route: route,
+            fare: fare
+          };
+        });
+        
+        // Select the route with minimum fare or first valid route
+        selectedRoute = fareResults.find(result => result.fare.isValid) || fareResults[0];
+        
+        // Update fare display
+        updateFareDisplay();
+      }
+
+    } catch (error) {
+      console.error('Error in findTwoPlace:', error);
+    } finally {
+      loading = false;
+    }
+  }
+
+  function calculateFareForRoute(route, fromStop, toStop) {
+    // Normalize stop names for comparison
+    const normalizeStop = (stop) => stop.toLowerCase().trim();
     
-  </div>
-    <div class="flex flex-col gap-2 mt-10">
-        <h1 class="text-3xl font-bold text-gray-800">Estimated Fare:</h1>
-        <h1 class="text-2xl font-semibold text-gray-600">average fare</h1>
-    </div>
-    <div class="w-screen mt-10 flex flex-row flex-wrap justify-center items-center gap-6">
-        {#each $searchStore.filtered as routes}
-            <div class=" rounded-lg border-2 w-120 h-80 p-2">
-                <p class="text-2xl font-bold">{routes.route_name}</p>
-                <br>
-                <p class="flex">{routes.stops}</p>
+    const fromIndex = route.stops.findIndex(stop => 
+      normalizeStop(stop).includes(normalizeStop(fromStop)) || 
+      normalizeStop(fromStop).includes(normalizeStop(stop))
+    );
+    
+    const toIndex = route.stops.findIndex(stop => 
+      normalizeStop(stop).includes(normalizeStop(toStop)) || 
+      normalizeStop(toStop).includes(normalizeStop(stop))
+    );
+
+    if (fromIndex === -1 || toIndex === -1) {
+      return {
+        isValid: false,
+        fare: 0,
+        distance: 0,
+        message: "One or both stops not found in this route"
+      };
+    }
+
+    const distance = Math.abs(toIndex - fromIndex);
+    
+    // Basic fare calculation (adjust according to your fare structure)
+    let fare = 0;
+    if (distance <= 3) {
+      fare = 25; // Base fare
+    } else if (distance <= 6) {
+      fare = 30;
+    } else if (distance <= 10) {
+      fare = 35;
+    } else {
+      fare = 40;
+    }
+
+    return {
+      isValid: true,
+      fare: fare,
+      distance: distance,
+      fromStop: route.stops[fromIndex],
+      toStop: route.stops[toIndex],
+      message: `${distance} stops apart`
+    };
+  }
+
+  function updateFareDisplay() {
+    const fareElement = document.getElementById('fareId');
+    if (fareElement && selectedRoute) {
+      if (selectedRoute.fare.isValid) {
+        fareElement.innerHTML = `
+          <div class="mt-4 p-4 bg-neutral-800 rounded-lg">
+            <div class="text-3xl font-bold text-green-400">Rs. ${selectedRoute.fare.fare}</div>
+            <div class="text-sm text-neutral-400 mt-2">
+              Route: ${selectedRoute.route.route_name}<br>
+              ${selectedRoute.fare.fromStop} → ${selectedRoute.fare.toStop}<br>
+              ${selectedRoute.fare.message}
             </div>
-        {/each}
+          </div>
+        `;
+      } else {
+        fareElement.innerHTML = `
+          <div class="mt-4 p-4 bg-red-900 rounded-lg">
+            <div class="text-xl font-bold text-red-400">Route Not Found</div>
+            <div class="text-sm text-neutral-400 mt-2">${selectedRoute.fare.message}</div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  function selectRoute(routeResult) {
+    selectedRoute = routeResult;
+    updateFareDisplay();
+  }
+
+</script>
+
+<div class="min-h-screen w-full bg-neutral-950 text-neutral-100 flex flex-col items-center py-12">
+  <div class="w-full max-w-3xl mx-auto bg-neutral-900 rounded-xl shadow-lg p-8 mt-12">
+    <form on:submit={handleSubmit} class="flex flex-col gap-8">
+      <div class="flex flex-col md:flex-row gap-8">
+        <div class="flex-1 flex flex-col gap-6">
+          <label class="text-lg font-medium text-neutral-200" for="from">From</label>
+          <input
+            id="from"
+            bind:value={$searchStore.searchFrom}
+            type="text"
+            placeholder="e.g. Budhanilkantha Bus Stop"
+            class="h-12 rounded-md bg-neutral-800 px-4 border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 transition text-neutral-100 placeholder-neutral-400"
+            disabled={loading}
+            autocomplete="off"
+          />
+          <label class="text-lg font-medium text-neutral-200 mt-2" for="to">To</label>
+          <input 
+            id="to"
+            bind:value={$searchStore.searchTo}
+            type="text"
+            placeholder="e.g. Thapathali"
+            class="h-12 rounded-md bg-neutral-800 px-4 border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 transition text-neutral-100 placeholder-neutral-400"
+            disabled={loading}
+            autocomplete="off"
+          />
+        </div>
+        <div class="flex items-end">
+          <button
+            class="h-12 px-8 rounded-md bg-neutral-700 text-neutral-100 font-semibold text-lg hover:bg-neutral-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Calculating...' : 'Calculate Distance'}
+          </button>
+        </div>
+      </div>
+    </form>
+    
+    <div class="mt-10 flex flex-col gap-2">
+      <h2 class="text-2xl font-bold text-neutral-200">Estimated Fare:</h2>
+      <span id="fareId"></span>
+      
+      <!-- Show multiple fare options if available -->
+      {#if fareResults.length > 1}
+        <div class="mt-6">
+          <h3 class="text-lg font-semibold text-neutral-300 mb-3">Alternative Routes:</h3>
+          <div class="flex flex-col gap-2">
+            {#each fareResults as routeResult, index}
+              <button
+                class="p-3 rounded-lg border border-neutral-700 hover:border-neutral-500 transition text-left {selectedRoute === routeResult ? 'bg-neutral-700 border-neutral-500' : 'bg-neutral-800'}"
+                on:click={() => selectRoute(routeResult)}
+              >
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium text-neutral-200">{routeResult.route.route_name}</div>
+                    {#if routeResult.fare.isValid}
+                      <div class="text-sm text-neutral-400">{routeResult.fare.message}</div>
+                    {:else}
+                      <div class="text-sm text-red-400">{routeResult.fare.message}</div>
+                    {/if}
+                  </div>
+                  {#if routeResult.fare.isValid}
+                    <div class="text-xl font-bold text-green-400">Rs. {routeResult.fare.fare}</div>
+                  {:else}
+                    <div class="text-sm text-red-400">N/A</div>
+                  {/if}
+                </div>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
     </div>
+  </div>
+  
+  <div class="w-full max-w-6xl mt-12 flex flex-wrap justify-center gap-6">
+    {#each $searchStore.filtered as routes}
+      <div class="rounded-lg border border-neutral-800 bg-neutral-900 w-80 min-h-56 p-6 flex flex-col gap-2 shadow transition hover:border-neutral-600">
+        <p class="text-xl font-semibold text-neutral-100">{routes.route_name}</p>
+        <div class="flex flex-wrap gap-1 mt-2 text-neutral-400 text-sm">
+          {#each routes.stops as stop, i}
+            <span>{stop}{i < routes.stops.length - 1 ? ',' : ''}</span>
+          {/each}
+        </div>
+      </div>
+    {/each}
+  </div>
 </div>

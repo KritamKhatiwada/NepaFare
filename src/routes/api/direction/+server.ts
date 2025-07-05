@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 
-const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjFhMjZlMTE0YTRhYTQwMmI4NThkOTNkZjFmNzE5YjRjIiwiaCI6Im11cm11cjY0In0=';
+const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU0YjMwYTVkY2U5MzRiY2E4OGNlZjg1ZmU1ZWM2YWFmIiwiaCI6Im11cm11cjY0In0=';
 
 export async function POST({ request }) {
   try {
