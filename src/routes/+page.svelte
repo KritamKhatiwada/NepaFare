@@ -571,16 +571,15 @@
         currentStore = value;
       })();
 
-      // Run the search handler
+  
       const updatedStore = searchHandler(currentStore);
-      
-      // Update the store with filtered results
+     
       searchStore.update(store => ({
         ...store,
         filtered: updatedStore.filtered
       }));
 
-      // Calculate fare for each filtered route
+    
       if (updatedStore.filtered.length > 0) {
         fareResults = updatedStore.filtered.map(route => {
           const fare = calculateFareForRoute(route, currentStore.searchFrom, currentStore.searchTo);
@@ -590,10 +589,9 @@
           };
         });
         
-        // Select the route with minimum fare or first valid route
+
         selectedRoute = fareResults.find(result => result.fare.isValid) || fareResults[0];
         
-        // Update fare display
         updateFareDisplay();
       }
 
@@ -605,7 +603,6 @@
   }
 
   function calculateFareForRoute(route, fromStop, toStop) {
-    // Normalize stop names for comparison
     const normalizeStop = (stop) => stop.toLowerCase().trim();
     
     const fromIndex = route.stops.findIndex(stop => 
@@ -629,7 +626,6 @@
 
     const distance = Math.abs(toIndex - fromIndex);
     
-    // Basic fare calculation (adjust according to your fare structure)
     let fare = 0;
     if (distance <= 3) {
       fare = 25; // Base fare
@@ -651,7 +647,7 @@
     };
   }
 
-  function updateFareDisplay() {
+function updateFareDisplay() {
     const fareElement = document.getElementById('fareId');
     if (fareElement && selectedRoute) {
       if (selectedRoute.fare.isValid) {
@@ -663,8 +659,176 @@
               ${selectedRoute.fare.fromStop} → ${selectedRoute.fare.toStop}<br>
               ${selectedRoute.fare.message}
             </div>
+            <button id="reportBtn" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 mt-3">Report</button>
+            
+            <!-- Hidden Report Form -->
+            <div id="reportForm" class="hidden mt-4 p-4 bg-neutral-700 rounded-lg border border-neutral-600">
+              <h3 class="text-lg font-semibold text-white mb-4">Report Issue</h3>
+              <form id="reportFormElement" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-neutral-300 mb-1" for="firstName">
+                      First Name <span class="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="firstName" 
+                      name="firstName" 
+                      required 
+                      class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter first name"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-neutral-300 mb-1" for="lastName">
+                      Last Name <span class="text-red-400">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="lastName" 
+                      name="lastName" 
+                      required 
+                      class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Enter last name"
+                    >
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-neutral-300 mb-1" for="phoneNumber">
+                    Phone Number <span class="text-red-400">*</span>
+                  </label>
+                  <input 
+                    type="tel" 
+                    id="phoneNumber" 
+                    name="phoneNumber" 
+                    required 
+                    class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Enter phone number"
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-neutral-300 mb-1" for="plateNumber">
+                    Vehicle Plate Number <span class="text-red-400">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="plateNumber" 
+                    name="plateNumber" 
+                    required 
+                    class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Enter vehicle plate number"
+                  >
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-neutral-300 mb-1" for="fromStop">
+                      From Stop
+                    </label>
+                    <textarea 
+                      id="fromStop" 
+                      name="fromStop" 
+                      rows="2"
+                      readonly
+                      class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white resize-none focus:outline-none cursor-not-allowed"
+                    >${selectedRoute.fare.fromStop}</textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-neutral-300 mb-1" for="toStop">
+                      To Stop
+                    </label>
+                    <textarea 
+                      id="toStop" 
+                      name="toStop" 
+                      rows="2"
+                      readonly
+                      class="w-full px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-md text-white resize-none focus:outline-none cursor-not-allowed"
+                    >${selectedRoute.fare.toStop}</textarea>
+                  </div>
+                </div>
+                <div class="flex gap-3 pt-2">
+                  <button 
+                    type="submit" 
+                    class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    Submit Report
+                  </button>
+                  <button 
+                    type="button" 
+                    id="cancelBtn"
+                    class="bg-neutral-600 text-white px-4 py-2 rounded hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         `;
+        
+        // Add event listeners after DOM is updated
+        setTimeout(() => {
+          const reportBtn = document.getElementById('reportBtn');
+          const cancelBtn = document.getElementById('cancelBtn');
+          const reportFormElement = document.getElementById('reportFormElement');
+          
+          if (reportBtn) {
+            reportBtn.addEventListener('click', toggleReportForm);
+          }
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', toggleReportForm);
+          }
+          if (reportFormElement) {
+            reportFormElement.addEventListener('submit', function(e) {
+              e.preventDefault();
+              
+              // Get form data
+              const formData = new FormData(reportFormElement);
+              const reportData = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                phoneNumber: formData.get('phoneNumber'),
+                plateNumber: formData.get('plateNumber'),
+                fromStop: formData.get('fromStop'),
+                toStop: formData.get('toStop'),
+                route: selectedRoute.route.route_name,
+                fare: selectedRoute.fare.fare
+              };
+              
+              // Option 1: Open email client with pre-filled data
+              const subject = encodeURIComponent(`Bus Fare Report - Route: ${reportData.route}`);
+              const body = encodeURIComponent(`
+Dear Nepal Police,
+
+I would like to report an issue with bus fare:
+
+Reporter Information:
+- Name: ${reportData.firstName} ${reportData.lastName}
+- Phone: ${reportData.phoneNumber}
+
+Route Details:
+- Route: ${reportData.route}
+- From: ${reportData.fromStop}
+- To: ${reportData.toStop}
+- Fare: Rs. ${reportData.fare}
+- Vehicle Plate: ${reportData.plateNumber}
+
+Please investigate this matter.
+
+Thank you.
+              `);
+              
+              const mailtoLink = `mailto:nepalpolice@gmail.com?subject=${subject}&body=${body}`;
+              window.open(mailtoLink, '_blank');
+              
+              
+              // Show success message
+              alert('Email client opened with report details. Please send the email to complete your report.');
+              
+              // Hide the form
+              toggleReportForm();
+            });
+          }
+        }, 0);
       } else {
         fareElement.innerHTML = `
           <div class="mt-4 p-4 bg-red-900 rounded-lg">
@@ -673,6 +837,14 @@
           </div>
         `;
       }
+    }
+  }
+
+  // Toggle function for showing/hiding the report form
+  function toggleReportForm() {
+    const reportForm = document.getElementById('reportForm');
+    if (reportForm) {
+      reportForm.classList.toggle('hidden');
     }
   }
 
@@ -725,7 +897,7 @@
       <h2 class="text-2xl font-bold text-neutral-200">Estimated Fare:</h2>
       <span id="fareId"></span>
       
-      <!-- Show multiple fare options if available -->
+      <!-- Show multiple fare  -->
       {#if fareResults.length > 1}
         <div class="mt-6">
           <h3 class="text-lg font-semibold text-neutral-300 mb-3">Alternative Routes:</h3>

@@ -113,8 +113,8 @@ async function findDistance(place1, place2) {
         console.log('Calculating distance...');
         const result = await calculateDistance(coord1, coord2);
         
-        // Convert meters to kilometers and seconds to hours/minutes
-        const distance = (result.distance / 1000).toFixed(2); // km
+
+        const distance = (result.distance / 1000).toFixed(2); 
         const hours = Math.floor(result.duration / 3600);
         const minutes = Math.floor((result.duration % 3600) / 60);
         duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -123,7 +123,6 @@ async function findDistance(place1, place2) {
         
         totalDistance += Number(distance);
         
-        // Calculate fare based on distance
         if (totalDistance <= 5) {
             totalFare = 18;
         } else if (totalDistance <= 10) {
@@ -188,18 +187,17 @@ async function calculateDistance(coord1, coord2) {
 export const goClickedHandler = (store) => {
     console.log('Go button clicked! Processing routes...');
     
-    // Reset totals when starting new calculation
     totalDistance = 0;
     totalFare = 0;
     
-    // Loop through each filtered route and its stops
+    
     store.filtered.forEach((route, routeIndex) => {
         console.log(`Route ${routeIndex + 1}: ${route.route_name}`);
         const routePlacePairs = [];
         
         for (let i = 0; i < route.stops.length - 1; i++) {
-            const place1 = route.stops[i];     // Current stop
-            const place2 = route.stops[i + 1]; // Next stop
+            const place1 = route.stops[i];     
+            const place2 = route.stops[i + 1]; 
             
             const placePair = {
                 routeIndex: routeIndex + 1,
@@ -215,7 +213,6 @@ export const goClickedHandler = (store) => {
             console.log(`    Place1: ${place1}`);
             console.log(`    Place2: ${place2}`);
             
-            // Call findDistance for each segment
             findDistance(place1, place2);
         }
     });
